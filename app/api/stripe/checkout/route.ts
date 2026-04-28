@@ -7,7 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(req: NextRequest) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -19,18 +19,12 @@ export async function POST(req: NextRequest) {
       },
     }
   )
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { planId } = await req.json()
-
-  const { data: plan } = await supabaseAdmin
-    .from('plans').select('stripe_price_id')
-    .eq('id', planId).single()
-
-  if (!plan?.stripe_price_id)
-    return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+  const { data: plan } = await supabaseAdmin.from('plans').select('stripe_price_id').eq('id', planId).single()
+  if (!plan?.stripe_price_id) return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
@@ -41,6 +35,5 @@ export async function POST(req: NextRequest) {
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?upgraded=true`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/upgrade`,
   })
-
   return NextResponse.json({ url: session.url })
 }

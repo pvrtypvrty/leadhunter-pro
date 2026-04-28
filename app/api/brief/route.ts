@@ -6,7 +6,7 @@ import { cookies } from 'next/headers'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,7 +18,6 @@ export async function POST(req: NextRequest) {
       },
     }
   )
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -28,7 +27,7 @@ export async function POST(req: NextRequest) {
   const message = await anthropic.messages.create({
     model: 'claude-haiku-4-5',
     max_tokens: 1500,
-    messages: [{ role: 'user', content: `Write a complete Lovable.dev project brief for ${businessName} (${category}) at ${address}. Reviews: ${topReviews}. Cover: objective, pages needed, features, design direction, tech requirements, SEO setup, scope and pricing. Format as clean markdown.` }]
+    messages: [{ role: 'user', content: `Write a complete Lovable.dev project brief for ${businessName} (${category}) at ${address}. Reviews: ${topReviews}. Cover: objective, pages, features, design, tech requirements, SEO, scope and pricing. Format as markdown.` }]
   })
 
   const brief = message.content[0].type === 'text' ? message.content[0].text : ''

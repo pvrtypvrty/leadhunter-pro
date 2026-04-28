@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { canRunSearch, incrementSearchCount, supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -16,18 +16,13 @@ export async function POST(req: NextRequest) {
       },
     }
   )
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const allowed = await canRunSearch(user.id)
-  if (!allowed) return NextResponse.json(
-    { error: 'Search limit reached. Upgrade to continue.', upgrade: true },
-    { status: 403 }
-  )
+  if (!allowed) return NextResponse.json({ error: 'Search limit reached. Upgrade to continue.', upgrade: true }, { status: 403 })
 
   const { location, category } = await req.json()
-
   const url = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json')
   url.searchParams.set('query', `${category} in ${location}`)
   url.searchParams.set('key', process.env.GOOGLE_PLACES_API_KEY!)
@@ -64,7 +59,6 @@ export async function POST(req: NextRequest) {
       }))
     )
   }
-
   await incrementSearchCount(user.id)
   return NextResponse.json({ leads: scored, searchId: search?.id })
 }
