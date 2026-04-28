@@ -4,52 +4,68 @@ import { createBrowserClient } from '@supabase/ssr'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
-    })
-    if (!error) setSent(true)
+    setError('')
+
+    if (mode === 'signup') {
+      const { error } = await supabase.auth.signUp({ email, password })
+      if (error) { setError(error.message); setLoading(false); return }
+      window.location.href = '/dashboard'
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) { setError(error.message); setLoading(false); return }
+      window.location.href = '/dashboard'
+    }
     setLoading(false)
   }
 
+  const s: any = {
+    page: { minHeight: '100vh', background: '#0a0b0d', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' },
+    box: { width: '100%', maxWidth: '400px' },
+    logo: { fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color: '#e8eaf0', marginBottom: '8px' },
+    sub: { fontSize: '14px', color: '#8a93a8', marginBottom: '32px' },
+    label: { fontFamily: 'monospace', fontSize: '11px', letterSpacing: '.1em', textTransform: 'uppercase' as const, color: '#4a5568', marginBottom: '6px', display: 'block' },
+    input: { width: '100%', padding: '10px 14px', background: '#181c23', border: '1px solid rgba(255,255,255,.11)', borderRadius: '6px', color: '#e8eaf0', fontSize: '14px', outline: 'none', marginBottom: '12px' },
+    btn: { width: '100%', padding: '12px', background: '#c9a84c', border: 'none', borderRadius: '6px', color: '#0a0b0d', fontSize: '14px', fontWeight: '700', cursor: 'pointer' },
+    toggle: { marginTop: '16px', textAlign: 'center' as const, fontSize: '13px', color: '#8a93a8' },
+    link: { color: '#c9a84c', cursor: 'pointer', textDecoration: 'underline' },
+    err: { color: '#f87171', fontSize: '13px', marginBottom: '12px', padding: '10px', background: 'rgba(248,113,113,.1)', borderRadius: '6px', border: '1px solid rgba(248,113,113,.2)' },
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0b0d', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color: '#e8eaf0', marginBottom: '8px' }}>
-            LeadHunter <span style={{ color: '#c9a84c' }}>Pro</span>
-          </div>
-          <p style={{ fontSize: '14px', color: '#8a93a8' }}>Sign in to your account</p>
+    <div style={s.page}>
+      <div style={s.box}>
+        <div style={s.logo}>LeadHunter <span style={{ color: '#c9a84c' }}>Pro</span></div>
+        <p style={s.sub}>{mode === 'login' ? 'Sign in to your account' : 'Create your account'}</p>
+        <form onSubmit={handleSubmit}>
+          <label style={s.label}>Email</label>
+          <input style={s.input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+          <label style={s.label}>Password</label>
+          <input style={s.input} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+          {error && <div style={s.err}>{error}</div>}
+          <button style={{ ...s.btn, opacity: loading ? .6 : 1 }} type="submit" disabled={loading}>
+            {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+          </button>
+        </form>
+        <div style={s.toggle}>
+          {mode === 'login' ? (
+            <>No account? <span style={s.link} onClick={() => setMode('signup')}>Sign up free</span></>
+          ) : (
+            <>Already have an account? <span style={s.link} onClick={() => setMode('login')}>Sign in</span></>
+          )}
         </div>
-        {sent ? (
-          <div style={{ padding: '20px', background: '#111318', border: '1px solid rgba(74,222,128,.2)', borderRadius: '8px', color: '#4ade80', fontSize: '14px', lineHeight: '1.6' }}>
-            Check your email. We sent a sign-in link to <strong>{email}</strong>.
-          </div>
-        ) : (
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontFamily: 'monospace', fontSize: '11px', letterSpacing: '.1em', textTransform: 'uppercase', color: '#4a5568' }}>Email address</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required
-                style={{ padding: '10px 14px', background: '#181c23', border: '1px solid rgba(255,255,255,.11)', borderRadius: '6px', color: '#e8eaf0', fontSize: '14px', outline: 'none' }} />
-            </div>
-            <button type="submit" disabled={loading}
-              style={{ padding: '12px', background: '#c9a84c', border: 'none', borderRadius: '6px', color: '#0a0b0d', fontSize: '14px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? .6 : 1 }}>
-              {loading ? 'Sending...' : 'Send sign-in link'}
-            </button>
-          </form>
-        )}
-        <p style={{ marginTop: '20px', fontSize: '12px', color: '#4a5568', textAlign: 'center' }}>No password needed. We email you a secure link.</p>
       </div>
     </div>
   )
