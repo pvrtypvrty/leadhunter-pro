@@ -1,3 +1,4 @@
+'use client'
 import { useState } from 'react'
 
 export default function DashboardClient({ user, subscription }: any) {
@@ -69,66 +70,34 @@ export default function DashboardClient({ user, subscription }: any) {
           <span style={{ fontSize: '13px', color: '#8a93a8' }}>{user.email}</span>
         </div>
       </nav>
-
       <div style={s.main}>
         <div style={s.card}>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', color: '#e8eaf0', marginBottom: '20px' }}>
-            Find Leads
-          </h2>
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', color: '#e8eaf0', marginBottom: '20px' }}>Find Leads</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
             <div>
               <label style={s.label}>Location</label>
-              <input
-                style={s.input}
-                value={location}
-                onChange={e => setLocation(e.target.value)}
-                placeholder="Miami, FL"
-              />
+              <input style={s.input} value={location} onChange={e => setLocation(e.target.value)} placeholder="Miami, FL" />
             </div>
             <div>
               <label style={s.label}>Business Type</label>
-              <input
-                style={s.input}
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                placeholder="barbershop"
-              />
+              <input style={s.input} value={category} onChange={e => setCategory(e.target.value)} placeholder="barbershop" />
             </div>
           </div>
-          {error && (
-            <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>
-              {error} <a href="/upgrade" style={{ color: '#c9a84c' }}>Upgrade →</a>
-            </p>
-          )}
-          <button
-            style={{ ...s.btn, opacity: loading ? .6 : 1 }}
-            onClick={runSearch}
-            disabled={loading}
-          >
+          {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>{error} <a href="/upgrade" style={{ color: '#c9a84c' }}>Upgrade →</a></p>}
+          <button style={{ ...s.btn, opacity: loading ? .6 : 1 }} onClick={runSearch} disabled={loading}>
             {loading ? 'Scanning...' : 'Run Lead Scan'}
           </button>
         </div>
-
         {leads.length > 0 && (
           <div>
-            <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: '#e8eaf0', marginBottom: '16px' }}>
-              {leads.length} Leads Found
-            </h3>
+            <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: '#e8eaf0', marginBottom: '16px' }}>{leads.length} Leads Found</h3>
             {leads.map((lead, i) => (
               <div key={i} style={s.leadCard}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                   <div>
-                    <div style={{ fontSize: '15px', fontWeight: '600', color: '#e8eaf0', marginBottom: '3px' }}>
-                      {lead.place.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#8a93a8' }}>
-                      {lead.place.formatted_address}
-                    </div>
-                    {lead.place.formatted_phone_number && (
-                      <div style={{ fontSize: '12px', color: '#8a93a8', marginTop: '2px' }}>
-                        {lead.place.formatted_phone_number}
-                      </div>
-                    )}
+                    <div style={{ fontSize: '15px', fontWeight: '600', color: '#e8eaf0', marginBottom: '3px' }}>{lead.place.name}</div>
+                    <div style={{ fontSize: '12px', color: '#8a93a8' }}>{lead.place.formatted_address}</div>
+                    {lead.place.formatted_phone_number && <div style={{ fontSize: '12px', color: '#8a93a8', marginTop: '2px' }}>{lead.place.formatted_phone_number}</div>}
                   </div>
                   <span style={{ ...s.pill, fontSize: '12px' }}>Score: {lead.score} · {lead.confidence}</span>
                 </div>
@@ -139,17 +108,9 @@ export default function DashboardClient({ user, subscription }: any) {
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {lead.place.formatted_phone_number && (
-                    <a
-                      href={`tel:${lead.place.formatted_phone_number}`}
-                      style={{ ...s.btn, fontSize: '12px', padding: '7px 14px', textDecoration: 'none', display: 'inline-block' }}
-                    >
-                      Call
-                    </a>
+                    <a href={`tel:${lead.place.formatted_phone_number}`} style={{ ...s.btn, fontSize: '12px', padding: '7px 14px', textDecoration: 'none', display: 'inline-block' }}>Call</a>
                   )}
-                  <button
-                    onClick={() => getPitch(lead)}
-                    style={{ ...s.btn, background: 'rgba(201,168,76,.1)', color: '#c9a84c', border: '1px solid rgba(201,168,76,.2)', fontSize: '12px', padding: '7px 14px' }}
-                  >
+                  <button onClick={() => getPitch(lead)} style={{ ...s.btn, background: 'rgba(201,168,76,.1)', color: '#c9a84c', border: '1px solid rgba(201,168,76,.2)', fontSize: '12px', padding: '7px 14px' }}>
                     Get Pitch
                   </button>
                 </div>
