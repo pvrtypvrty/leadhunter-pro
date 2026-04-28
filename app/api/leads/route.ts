@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { canRunSearch, incrementSearchCount, supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies })
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return cookieStore.get(name)?.value },
+        set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }) },
+        remove(name: string, options: CookieOptions) { cookieStore.set({ name, value: '', ...options }) },
+      },
+    }
+  )
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -27,23 +39,10 @@ export async function POST(req: NextRequest) {
   const scored = places.map((place: any) => {
     let score = 0
     const reasons: string[] = []
-
-    if (!place.website) {
-      score += 50
-      reasons.push('No website in Google Places listing')
-    }
-    if (place.website?.includes('facebook.com')) {
-      score += 30
-      reasons.push('Website field links to Facebook only')
-    }
-    if (place.website?.includes('instagram.com')) {
-      score += 30
-      reasons.push('Website field links to Instagram only')
-    }
-    if (place.website?.includes('linktr.ee')) {
-      score += 25
-      reasons.push('Website is a Linktree page, no real site')
-    }
+    if (!place.website) { score += 50; reasons.push('No website in Google Places listing') }
+    if (place.website?.includes('facebook.com')) { score += 30; reasons.push('Website links to Facebook only') }
+    if (place.website?.includes('instagram.com')) { score += 30; reasons.push('Website links to Instagram only') }
+    if (place.website?.includes('linktr.ee')) { score += 25; reasons.push('Website is a Linktree page') }
     if (place.user_ratings_total > 20) score += 10
     score = Math.min(score, 100)
     const confidence = score >= 80 ? 'HIGH' : score >= 60 ? 'MED-HIGH' : 'MEDIUM'
@@ -58,13 +57,10 @@ export async function POST(req: NextRequest) {
   if (search) {
     await supabaseAdmin.from('leads').insert(
       scored.map(({ place, score, confidence, reasons }: any) => ({
-        search_id: search.id,
-        user_id: user.id,
-        name: place.name,
-        address: place.formatted_address,
+        search_id: search.id, user_id: user.id,
+        name: place.name, address: place.formatted_address,
         phone: place.formatted_phone_number,
-        score, confidence, reasons,
-        raw_data: place
+        score, confidence, reasons, raw_data: place
       }))
     )
   }
